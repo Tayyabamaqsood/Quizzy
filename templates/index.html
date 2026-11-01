@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quizzy | General Knowledge Chatbot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #261c52;
+  --muted: #6b6396;
+  --violet: #6c4cff;
+  --violet-soft: #ebe6ff;
+  --coral: #ff6b6b;
+  --coral-soft: #ffe6e3;
+  --sun: #ffc83d;
+  --sun-soft: #fff3cc;
+  --mint: #1fc08f;
+  --mint-soft: #d9f8ec;
+  --sky: #2fa8ff;
+  --sky-soft: #dcf0ff;
+  --page: #f6f3ff;
+  --white: #ffffff;
+  --head: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  --body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--body); font-weight: 500; line-height: 1.55;
+  background:
+    radial-gradient(520px 380px at 8% 6%, #ffe4a8 0%, transparent 70%),
+    radial-gradient(560px 420px at 96% 12%, #cfe9ff 0%, transparent 70%),
+    radial-gradient(600px 460px at 70% 100%, #ffd6e0 0%, transparent 70%),
+    var(--page);
+  background-attachment: fixed;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--violet); outline-offset: 2px; }
+
+.app {
+  max-width: 1180px; margin: 0 auto; padding: 28px 22px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; align-items: start;
+}
+
+/* ---------- left: intro ---------- */
+.intro { position: sticky; top: 28px; }
+.mascot { width: 128px; height: 128px; animation: bob 3.4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+.eye { transform-origin: center; transform-box: fill-box; animation: blink 5s infinite; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+.intro h1 { font-family: var(--head); font-weight: 700; font-size: clamp(2.2rem, 4.6vw, 3.4rem); line-height: 1.05; margin: 14px 0 12px; letter-spacing: -.01em; }
+.intro h1 span { background: var(--sun); padding: 0 .25em; border-radius: .3em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.intro > p { font-size: 1.1rem; color: var(--muted); margin: 0 0 22px; max-width: 44ch; font-weight: 700; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+.fact { background: var(--white); border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: .92rem; box-shadow: 0 4px 0 rgba(38,28,82,.1); }
+.fact b { color: var(--violet); }
+.steps { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.step { display: flex; gap: 14px; align-items: center; background: var(--white); border-radius: 18px; padding: 14px 18px; box-shadow: 0 4px 0 rgba(38,28,82,.1); }
+.step .n { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-family: var(--head); font-weight: 700; font-size: 1.15rem; color: var(--white); }
+.step:nth-child(1) .n { background: var(--coral); }
+.step:nth-child(2) .n { background: var(--sky); }
+.step:nth-child(3) .n { background: var(--mint); }
+.step strong { display: block; font-family: var(--head); font-size: 1.05rem; font-weight: 600; }
+.step span { color: var(--muted); font-size: .92rem; font-weight: 700; }
+
+/* ---------- right: chat window ---------- */
+.chat {
+  background: var(--white); border-radius: 28px; box-shadow: 0 8px 0 rgba(38,28,82,.12), 0 24px 50px -20px rgba(38,28,82,.3);
+  display: flex; flex-direction: column; height: min(760px, calc(100dvh - 56px)); min-height: 520px; overflow: hidden;
+}
+.chat-head { flex: none; display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--violet); color: var(--white); }
+.chat-head .dot { width: 38px; height: 38px; border-radius: 50%; background: var(--white); display: grid; place-items: center; font-size: 1.3rem; }
+.chat-head strong { font-family: var(--head); font-size: 1.15rem; font-weight: 600; display: block; line-height: 1.1; }
+.chat-head small { font-weight: 700; opacity: .85; }
+.chat-head .live { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #6dffc6; margin-right: 6px; }
+.grow { flex: 1; }
+.reset { border: 2px solid rgba(255,255,255,.55); background: transparent; color: var(--white); padding: 6px 14px; border-radius: 999px; font-weight: 800; font-size: .85rem; cursor: pointer; }
+.reset:hover { background: rgba(255,255,255,.18); }
+.reset[hidden] { display: none; }
+.head-btns { display: flex; gap: 8px; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-left: 44px; }
+.tile { --bg: var(--sky-soft); --fg: #0d6fb3; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 16px; padding: 12px 14px; background: var(--bg); color: var(--fg); cursor: pointer; transition: transform .12s; }
+.tile:hover { transform: translateY(-2px); }
+.tile .ico { flex: none; width: 38px; height: 38px; border-radius: 12px; background: var(--white); display: grid; place-items: center; font-size: 1.25rem; }
+.tile strong { display: block; font-family: var(--head); font-weight: 600; font-size: .95rem; line-height: 1.2; }
+.tile small { font-weight: 800; font-size: .76rem; opacity: .8; }
+.tile.c1 { --bg: var(--coral-soft); --fg: #b83c3c; }
+.tile.c2 { --bg: var(--mint-soft); --fg: #0c7a5a; }
+.tile.c3 { --bg: var(--sun-soft); --fg: #8a6200; }
+.tile.c4 { --bg: var(--violet-soft); --fg: #4b30d1; }
+
+.feed { flex: 1; overflow-y: auto; padding: 22px 20px 8px; display: grid; gap: 16px; align-content: start; scroll-behavior: smooth; }
+.row { display: flex; gap: 10px; align-items: flex-end; }
+.row.me { justify-content: flex-end; }
+.face { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--sun); display: grid; place-items: center; font-size: 1.1rem; }
+
+.bot-bubble { background: var(--violet-soft); border-radius: 20px 20px 20px 6px; padding: 12px 18px; max-width: 88%; font-weight: 700; }
+.me-bubble { background: var(--coral); color: var(--white); border-radius: 20px 20px 6px 20px; padding: 12px 18px; max-width: 85%; font-weight: 700; overflow-wrap: anywhere; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 44px; }
+.chip { border: 2px solid transparent; border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: .92rem; cursor: pointer; transition: transform .12s; }
+.chip:hover { transform: translateY(-2px); }
+.chip:nth-child(1) { background: var(--sky-soft); color: #0d6fb3; }
+.chip:nth-child(2) { background: var(--mint-soft); color: #0c7a5a; }
+.chip:nth-child(3) { background: var(--sun-soft); color: #8a6200; }
+.chip:nth-child(4) { background: var(--coral-soft); color: #b83c3c; }
+
+/* answer cards */
+.answer-card { --tone: var(--mint); --tone-soft: var(--mint-soft); --tone-ink: #0c7a5a;
+  flex: 1; min-width: 0; background: var(--white); border: 3px solid var(--tone); border-radius: 22px 22px 22px 6px; padding: 18px 20px; }
+.answer-card.sky { --tone: var(--sky); --tone-soft: var(--sky-soft); --tone-ink: #0d6fb3; }
+.answer-card.sun { --tone: var(--sun); --tone-soft: var(--sun-soft); --tone-ink: #8a6200; }
+.answer-card.coral { --tone: var(--coral); --tone-soft: var(--coral-soft); --tone-ink: #b83c3c; }
+.tag { display: inline-block; background: var(--tone-soft); color: var(--tone-ink); font-weight: 800; font-size: .85rem; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
+.answer { font-family: var(--head); font-weight: 500; font-size: 1.35rem; line-height: 1.4; margin: 0; overflow-wrap: anywhere; }
+.coral .answer { font-size: 1.2rem; font-weight: 600; }
+.note { margin: 10px 0 0; color: var(--muted); font-weight: 700; font-size: .95rem; }
+.tips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.tips li { background: var(--tone-soft); color: var(--tone-ink); font-weight: 800; font-size: .85rem; padding: 6px 12px; border-radius: 12px; }
+.foot { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 2px dashed var(--tone-soft); }
+.ring { position: relative; flex: none; width: 64px; height: 64px; }
+.ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+.ring .track { fill: none; stroke: var(--tone-soft); stroke-width: 8; }
+.ring .bar { fill: none; stroke: var(--tone); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 169.6; stroke-dashoffset: 169.6; transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--head); font-weight: 600; font-size: .95rem; }
+.foot-text { flex: 1; min-width: 0; }
+.foot-text small { display: block; color: var(--muted); font-weight: 800; font-size: .78rem; }
+.foot-text p { margin: 0; font-weight: 700; font-size: .95rem; overflow-wrap: anywhere; }
+.copy { flex: none; border: 2px solid var(--tone); background: var(--white); color: var(--tone-ink); font-weight: 800; font-size: .82rem; padding: 6px 12px; border-radius: 12px; cursor: pointer; }
+.copy:hover { background: var(--tone-soft); }
+
+.typing { display: inline-flex; gap: 6px; padding: 8px 4px; }
+.typing i { width: 10px; height: 10px; border-radius: 50%; animation: hop .9s infinite; }
+.typing i:nth-child(1) { background: var(--coral); }
+.typing i:nth-child(2) { background: var(--sun); animation-delay: .15s; }
+.typing i:nth-child(3) { background: var(--mint); animation-delay: .3s; }
+@keyframes hop { 40% { transform: translateY(-7px); } }
+
+/* composer */
+.composer { flex: none; padding: 12px 16px 16px; border-top: 2px solid var(--violet-soft); }
+form.ask { display: flex; gap: 10px; }
+form.ask input { flex: 1; min-width: 0; background: var(--page); border: 3px solid transparent; border-radius: 16px; color: var(--ink); font: inherit; font-weight: 700; font-size: 1.05rem; padding: 13px 18px; }
+form.ask input::placeholder { color: var(--muted); font-weight: 600; }
+form.ask input:focus { outline: none; border-color: var(--violet); background: var(--white); }
+.send { border: 0; border-radius: 16px; background: var(--violet); color: var(--white); font-family: var(--head); font-weight: 600; font-size: 1.05rem; padding: 0 24px; cursor: pointer; box-shadow: 0 4px 0 #4b30d1; }
+.send:hover { background: #7a5eff; }
+.send:active { transform: translateY(3px); box-shadow: 0 1px 0 #4b30d1; }
+.send[disabled] { opacity: .65; cursor: progress; }
+.hint { margin: 8px 4px 0; text-align: center; font-size: .8rem; color: var(--muted); font-weight: 700; }
+
+noscript .answer-card { margin: 16px; }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; gap: 24px; padding: 18px 14px 28px; }
+  .intro { position: static; }
+  .mascot { width: 92px; height: 92px; }
+  .steps { grid-template-columns: 1fr; }
+  .chat { height: 78dvh; }
+}
+@media (max-width: 520px) {
+  .chips, .tiles { padding-left: 0; }
+  .tiles { grid-template-columns: 1fr; }
+  .face { display: none; }
+  .foot { flex-wrap: wrap; }
+  .send { padding: 0 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot, .eye, .typing i { animation: none; }
+  .ring .bar, .chip { transition: none; }
+  .feed { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="intro">
+    <svg class="mascot" viewBox="0 0 128 128" role="img" aria-label="Quizzy the friendly robot">
+      <line x1="64" y1="14" x2="64" y2="28" stroke="#261c52" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="64" cy="12" r="8" fill="#ff6b6b"/>
+      <rect x="18" y="28" width="92" height="76" rx="28" fill="#6c4cff"/>
+      <rect x="8" y="54" width="12" height="26" rx="6" fill="#ffc83d"/>
+      <rect x="108" y="54" width="12" height="26" rx="6" fill="#ffc83d"/>
+      <rect x="30" y="42" width="68" height="48" rx="20" fill="#ffffff"/>
+      <ellipse class="eye" cx="49" cy="62" rx="7" ry="9" fill="#261c52"/>
+      <ellipse class="eye" cx="79" cy="62" rx="7" ry="9" fill="#261c52"/>
+      <circle cx="51" cy="59" r="2.4" fill="#fff"/>
+      <circle cx="81" cy="59" r="2.4" fill="#fff"/>
+      <path d="M52 76 Q64 86 76 76" fill="none" stroke="#ff6b6b" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="38" cy="75" r="5" fill="#ffb3b3" opacity=".8"/>
+      <circle cx="90" cy="75" r="5" fill="#ffb3b3" opacity=".8"/>
+    </svg>
+    <h1>Hi, I'm <span>Quizzy!</span></h1>
+    <p>Ask me a general knowledge question. I'll look through my library and bring back the closest answer, plus how sure I am about it.</p>
+    <div class="facts">
+      <div class="fact"><b>1,000</b> questions in my library</div>
+      <div class="fact"><b>10</b> topics</div>
+      <div class="fact"><b>Instant</b> answers</div>
+    </div>
+    <ol class="steps">
+      <li class="step"><div class="n">1</div><div><strong>Ask</strong><span>Type any general knowledge question.</span></div></li>
+      <li class="step"><div class="n">2</div><div><strong>Match</strong><span>I find the most similar question I know.</span></div></li>
+      <li class="step"><div class="n">3</div><div><strong>Learn</strong><span>You get the answer and a match score.</span></div></li>
+    </ol>
+  </aside>
+
+  <section class="chat" aria-label="Chat with Quizzy">
+    <div class="chat-head">
+      <div class="dot" aria-hidden="true">🤖</div>
+      <div>
+        <strong>Quizzy</strong>
+        <small><span class="live"></span>Ready to answer</small>
+      </div>
+      <div class="grow"></div>
+      <div class="head-btns">
+        <button class="reset" id="topicsBtn" type="button">Topics</button>
+        <button class="reset" id="resetBtn" type="button" hidden>New chat</button>
+      </div>
+    </div>
+
+    <div class="feed" id="feed" aria-live="polite">
+      <div class="row" id="greeting">
+        <div class="face" aria-hidden="true">🤖</div>
+        <div class="bot-bubble">Hello! 👋 Pick a topic to see questions I know, or type your own question below.</div>
+      </div>
+      <div class="tiles" id="topics"></div>
+    </div>
+
+    <noscript>
+      {% if bot_response is not none %}
+        <div class="answer-card {% if matched_question and matched_question != 'None' %}{% else %}coral{% endif %}">
+          <p><strong>You asked:</strong> {{ user_question }}</p>
+          <p class="answer">{{ bot_response }}</p>
+          {% if matched_question and matched_question != 'None' %}
+            <p class="note">Closest match: {{ matched_question }} ({{ confidence }}%)</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </noscript>
+
+    <div class="composer">
+      <form class="ask" id="askForm" action="/ask" method="post">
+        <input type="text" name="question" id="question" placeholder="Ask me anything…"
+               aria-label="Your question" autocomplete="off" maxlength="300" required autofocus
+               value="{{ user_question if user_question else '' }}">
+        <button class="send" id="sendBtn" type="submit">Ask</button>
+      </form>
+      <p class="hint">Press Enter to send. I only know what's in my 1,000-question library.</p>
+    </div>
+  </section>
+
+</div>
+
+{% if bot_response is not none %}
+<script type="application/json" id="initial">{{ {"question": user_question, "answer": bot_response, "matched": matched_question, "confidence": confidence} | tojson }}</script>
+{% endif %}
+
+<script>
+(function () {
+  var THRESHOLD = 30; // matches THRESHOLD = 0.30 in app.py
+  var feed = document.getElementById('feed');
+  var form = document.getElementById('askForm');
+  var input = document.getElementById('question');
+  var sendBtn = document.getElementById('sendBtn');
+  var resetBtn = document.getElementById('resetBtn');
+  var topics = document.getElementById('topics');
+  var topicsBtn = document.getElementById('topicsBtn');
+
+  var CATS = [
+    { name: 'Science & Technology', ico: '🔬', qs: ['What is the SI unit of electric current?', 'What is the SI unit of force?', 'Which scientist formulated the laws of motion and universal gravitation?', 'What is the main function of chlorophyll in plants?'] },
+    { name: 'History', ico: '🏛️', qs: ['In which year did World War I begin?', 'Who was the first president of the United States?', 'Who was the first female prime minister of the United Kingdom?', 'Which war was fought between the North and South in the United States from 1861 to 1865?'] },
+    { name: 'Geography', ico: '🌍', qs: ['What is the capital of Kazakhstan?', 'Which strait separates Spain from Morocco?', 'Which mountain range runs along the western edge of South America?', 'Which is the smallest independent country by area?'] },
+    { name: 'Pakistan', ico: '🕌', qs: ['On what date did Pakistan become independent?', 'In which year was the Lahore Resolution passed?', "Which dam on the Indus River is one of Pakistan's major reservoirs?", 'Which Pakistani scientist shared the 1979 Nobel Prize in Physics?'] },
+    { name: 'Sports', ico: '⚽', qs: ['How many players from one team are on the field in association football?', 'Which country won the first FIFA World Cup in 1930?', 'How many bases are on a baseball diamond?', 'Which sport uses a puck?'] },
+    { name: 'Computer Science & IT', ico: '💻', qs: ['What does CPU stand for?', 'What does API stand for?', "Which HTTP status code commonly means 'Not Found'?", 'What is phishing?'] },
+    { name: 'Artificial Intelligence', ico: '🧠', qs: ['What does AI stand for?', 'What does regression typically predict?', 'What is an embedding?', 'What is clustering?'] },
+    { name: 'Mathematics', ico: '🔢', qs: ['What is 18% of 250?', 'Solve for x: 13x = 260.', 'What is the value of 2x + y when x = 15 and y = 25?', 'What is the area of a square with side length 19 cm?'] },
+    { name: 'Health & Human Body', ico: '🩺', qs: ['Which organ pumps blood through the body?', 'Which organ produces insulin?', "What is the body's largest internal organ?", 'Which type of muscle is found in the walls of the intestines?'] },
+    { name: 'Logical Reasoning', ico: '🧩', qs: ['Find the next number: 2, 6, 12, 20, 30, __.', 'Find the next number in the arithmetic sequence 6, 9, 12, 15, __.', 'Find the next number in the sequence 12, 24, 36, 48, __.', 'If a number is increased by 16 and the result is 64, what was the original number?'] }
+  ];
+
+  function buildTiles() {
+    var wrap = el('div', 'tiles');
+    CATS.forEach(function (c, i) {
+      var b = el('button', 'tile c' + (i % 5));
+      b.type = 'button';
+      b.dataset.cat = String(i);
+      var ico = el('span', 'ico', c.ico);
+      ico.setAttribute('aria-hidden', 'true');
+      var txt = el('span');
+      txt.appendChild(el('strong', null, c.name));
+      txt.appendChild(el('small', null, '100 questions'));
+      b.appendChild(ico);
+      b.appendChild(txt);
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function showTopics() {
+    var row = el('div', 'row');
+    var face = el('div', 'face', '🤖');
+    face.setAttribute('aria-hidden', 'true');
+    row.appendChild(face);
+    row.appendChild(el('div', 'bot-bubble', 'Pick a topic:'));
+    feed.appendChild(row);
+    var grid = buildTiles();
+    feed.appendChild(grid);
+    toBottom();
+  }
+
+  function showCategory(i) {
+    var c = CATS[i];
+    var row = el('div', 'row');
+    var face = el('div', 'face', '🤖');
+    face.setAttribute('aria-hidden', 'true');
+    row.appendChild(face);
+    row.appendChild(el('div', 'bot-bubble', c.ico + ' ' + c.name + ': tap a question, or type your own.'));
+    feed.appendChild(row);
+    var wrap = el('div', 'chips');
+    c.qs.forEach(function (q) {
+      var b = el('button', 'chip', q);
+      b.type = 'button';
+      b.dataset.q = q;
+      wrap.appendChild(b);
+    });
+    var back = el('button', 'chip', 'All topics');
+    back.type = 'button';
+    back.dataset.topics = '1';
+    wrap.appendChild(back);
+    feed.appendChild(wrap);
+    toBottom();
+  }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+  function botRow(content) {
+    var row = el('div', 'row');
+    var face = el('div', 'face', '🤖');
+    face.setAttribute('aria-hidden', 'true');
+    row.appendChild(face);
+    row.appendChild(content);
+    return row;
+  }
+  function toBottom() { feed.scrollTop = feed.scrollHeight; }
+  function started() {
+    if (topics) { topics.remove(); topics = null; }
+    resetBtn.hidden = false;
+  }
+
+  function addUser(text) {
+    started();
+    var row = el('div', 'row me');
+    row.appendChild(el('div', 'me-bubble', text));
+    feed.appendChild(row);
+    toBottom();
+  }
+
+  function addTyping() {
+    var card = el('div', 'bot-bubble');
+    var dots = el('span', 'typing');
+    dots.setAttribute('aria-label', 'Quizzy is thinking');
+    dots.innerHTML = '<i></i><i></i><i></i>';
+    card.appendChild(dots);
+    var row = botRow(card);
+    feed.appendChild(row);
+    toBottom();
+    return row;
+  }
+
+  function tier(c) {
+    if (c >= 75) return { cls: '', label: '🎉 Super match' };
+    return { cls: 'sky', label: '👍 Good match' };
+  }
+
+  function addAnswer(d) {
+    var hasMatch = d.matched && d.matched !== 'None';
+    var c = (d.confidence === null || d.confidence === undefined) ? null : Number(d.confidence);
+    var card;
+
+    if (hasMatch) {
+      var t = tier(c || 0);
+      card = el('div', 'answer-card ' + t.cls);
+      card.appendChild(el('span', 'tag', t.label));
+      card.appendChild(el('p', 'answer', d.answer));
+
+      var foot = el('div', 'foot');
+      var ring = el('div', 'ring');
+      ring.innerHTML = '<svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="27"/><circle class="bar" cx="32" cy="32" r="27"/></svg>';
+      var pct = el('b', null, Math.round(c) + '%');
+      ring.appendChild(pct);
+      ring.setAttribute('role', 'img');
+      ring.setAttribute('aria-label', 'Match score ' + c + ' percent');
+      foot.appendChild(ring);
+
+      var ft = el('div', 'foot-text');
+      ft.appendChild(el('small', null, 'Confidence'));
+      ft.appendChild(el('p', null, t.label.replace(/^\S+\s/, '')));
+      foot.appendChild(ft);
+
+      var copy = el('button', 'copy', 'Copy');
+      copy.type = 'button';
+      copy.addEventListener('click', function () {
+        if (!navigator.clipboard) return;
+        navigator.clipboard.writeText(d.answer).then(function () {
+          copy.textContent = 'Copied!';
+          setTimeout(function () { copy.textContent = 'Copy'; }, 1500);
+        });
+      });
+      foot.appendChild(copy);
+      card.appendChild(foot);
+
+      feed.appendChild(botRow(card));
+      var bar = ring.querySelector('.bar');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          bar.style.strokeDashoffset = String(169.6 * (1 - Math.min(c, 100) / 100));
+        });
+      });
+    } else {
+      card = el('div', 'answer-card coral');
+      card.appendChild(el('span', 'tag', '🤔 No match found'));
+      card.appendChild(el('p', 'answer', d.answer));
+      if (c !== null && c > 0) {
+        card.appendChild(el('p', 'note', 'My closest question scored ' + c + '%, and I need at least ' + THRESHOLD + '% to answer.'));
+      }
+      var tips = el('ul', 'tips');
+      ['Check your spelling', 'Try the main keywords', 'Stick to general knowledge'].forEach(function (s) {
+        tips.appendChild(el('li', null, s));
+      });
+      card.appendChild(tips);
+      feed.appendChild(botRow(card));
+    }
+    toBottom();
+  }
+
+  function addError() {
+    var card = el('div', 'answer-card coral');
+    card.appendChild(el('span', 'tag', '😵 Connection problem'));
+    card.appendChild(el('p', 'answer', "I couldn't reach the server."));
+    card.appendChild(el('p', 'note', 'Check that the app is still running, then ask again.'));
+    feed.appendChild(botRow(card));
+    toBottom();
+  }
+
+  function ask(q) {
+    q = q.trim();
+    if (!q) return;
+    addUser(q);
+    input.value = '';
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Thinking…';
+    var typing = addTyping();
+    var wait = new Promise(function (r) { setTimeout(r, 500); });
+    var body = new FormData();
+    body.append('question', q);
+
+    var req = fetch('/ask', { method: 'POST', body: body })
+      .then(function (res) { if (!res.ok) throw new Error('bad status'); return res.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var data = doc.getElementById('initial');
+        if (!data) throw new Error('no data');
+        return JSON.parse(data.textContent);
+      });
+
+    Promise.all([req, wait]).then(function (r) {
+      typing.remove();
+      addAnswer(r[0]);
+    }).catch(function () {
+      typing.remove();
+      addError();
+    }).then(function () {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Ask';
+      input.focus();
+    });
+  }
+
+  form.addEventListener('submit', function (e) { e.preventDefault(); ask(input.value); });
+  var firstGrid = buildTiles();
+  topics.replaceWith(firstGrid);
+  topics = firstGrid;
+  feed.addEventListener('click', function (e) {
+    var tile = e.target.closest('.tile');
+    if (tile) { showCategory(Number(tile.dataset.cat)); return; }
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    if (chip.dataset.topics) showTopics();
+    else if (chip.dataset.q) ask(chip.dataset.q);
+  });
+  topicsBtn.addEventListener('click', showTopics);
+  resetBtn.addEventListener('click', function () { window.location.href = '/'; });
+
+  // Page loaded by a normal form post: show that exchange in the chat.
+  var initial = document.getElementById('initial');
+  if (initial) {
+    var d = JSON.parse(initial.textContent);
+    input.value = '';
+    addUser(d.question || '(empty question)');
+    addAnswer(d);
+  }
+})();
+</script>
+</body>
+</html>
